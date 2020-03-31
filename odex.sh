@@ -1,8 +1,13 @@
 #!/bin/bash
+# 变量区
 workfile=/storage/emulated/0/MIUI_odex
 success_count=0
 faild_count=0
 now_time=$(date '+%Y%m%d_%H:%M:%S')
+model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
+ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
+modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
+time=$(date "+%Y年%m月%d日 %H:%M:%S")
 # rm
 rm -rf $workfile
 # mkdir
@@ -265,15 +270,11 @@ rm -rf /data/adb/modules/odex
 mkdir -p /data/adb/modules/odex/system
 touch /data/adb/modules/odex/module.prop
 echo "id=odex" >> /data/adb/modules/odex/module.prop
-echo "name=$model 优化" >> /data/adb/modules/odex/module.prop
+echo "name=$model优化" >> /data/adb/modules/odex/module.prop
 echo "version=1.0" >> /data/adb/modules/odex/module.prop
 echo "versionCode=1" >> /data/adb/modules/odex/module.prop
 echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/odex/module.prop
 echo "minMagisk=19000" >> /data/adb/modules/odex/module.prop
-model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
-ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
-modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
-time=$(date "+%Y年%m月%d日 %H:%M:%S")
 echo -n "description=对系统应用进行分离odex，分离的机型为$model，版本为MIUI $ver $modelversion，编译时间为$time" >> /data/adb/modules/odex/module.prop
 mv $workfile/* /data/adb/modules/odex/system
 if [ $? = 0 ] ; then
