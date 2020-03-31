@@ -11,25 +11,24 @@ mkdir -p /storage/emulated/0/MIUI_odex/app
 mkdir -p /storage/emulated/0/MIUI_odex/priv-app
 mkdir -p /storage/emulated/0/MIUI_odex/product/app
 mkdir -p /storage/emulated/0/MIUI_odex/product/priv-app
-mkdir -p /storage/emulated/0/MIUI_odex/framework
 # log
 touch $workfile/log/MIUI_odex_$now_time.log
 # copy files to path
 cp -r /system/app/* $workfile/app
 cp -r /system/priv-app/* $workfile/priv-app
 cp -r /system/product/app/* $workfile/product/app
-cp -r /system/product/app/* $workfile/product/app
-cp -r /system/framework/* $workfile/product/framework
+cp -r /system/product/priv-app/* $workfile/product/priv-app
 echo "- 文件复制完成，开始执行"
 
 # system/app
-echo 正在分离system/app下的apk
+echo "- 正在分离system/app"
 shopt -s extglob
 dirapp=$(ls -l $workfile/app |awk '/^d/ {print $NF}')
 for i in $dirapp
 do
    cd $workfile/app/$i
 # unzip
+   echo "- 正在解包$i，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -77,13 +76,14 @@ fi
 done
 
 # system/priv-app
-echo 正在分离system/priv-app下的apk
+echo "- 正在分离system/priv-app"
 shopt -s extglob
 dirpriv=$(ls -l $workfile/priv-app |awk '/^d/ {print $NF}')
 for p in $dirpriv
 do
    cd $workfile/priv-app/$p
 # unzip
+   echo "- 正在解包$p，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -131,13 +131,14 @@ fi
 done
 
 # system/product/app
-echo 正在分离system/product/app下的apk
+echo "- 正在分离system/product/app"
 shopt -s extglob
 productapp=$(ls -l $workfile/product/app |awk '/^d/ {print $NF}')
 for a in $productapp
 do
    cd $workfile/product/app/$a
 # unzip
+   echo "- 正在解包$a，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -185,13 +186,14 @@ fi
 done
 
 # system/product/priv-app
-echo 正在分离system/product/priv-app下的apk
+echo "- 正在分离system/product/priv-app"
 shopt -s extglob
-productprivapp="`grep -n ".jar" /home/yzdhz/test.prop | cut -d. -f1`")
+productprivapp=$(ls -l $workfile/product/priv-app |awk '/^d/ {print $NF}')
 for b in $productprivapp
 do
    cd $workfile/product/priv-app/$b
 # unzip
+   echo "- 正在解包$b，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -239,6 +241,7 @@ fi
 done
 # end
 echo "- 共$success_count次成功，$faild_count次失败，请检查对应目录"
+
 # 用户应用
 echo "正在以Everything模式优化用户软件"
 mkdir -p $workfile/packagelist
@@ -250,7 +253,7 @@ for item in `pm list packages -3`
 do
 echo 
 app=${item:8}
-echo "应用优化完成(Everthing 模式) -> $app"
+echo "应用优化完成 -> $app"
 cmd package compile -m everything $app
 let appnumber=appnumber+1
 echo "已完成 $appnumber / $apptotalnumber"
@@ -262,7 +265,7 @@ rm -rf /data/adb/modules/odex
 mkdir -p /data/adb/modules/odex/system
 touch /data/adb/modules/odex/module.prop
 echo "id=odex" >> /data/adb/modules/odex/module.prop
-echo "name=odex优化" >> /data/adb/modules/odex/module.prop
+echo "name=$model 优化" >> /data/adb/modules/odex/module.prop
 echo "version=1.0" >> /data/adb/modules/odex/module.prop
 echo "versionCode=1" >> /data/adb/modules/odex/module.prop
 echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/odex/module.prop
