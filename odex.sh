@@ -1,13 +1,8 @@
 #!/bin/bash
-# 变量区
 workfile=/storage/emulated/0/MIUI_odex
 success_count=0
 faild_count=0
 now_time=$(date '+%Y%m%d_%H:%M:%S')
-model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
-ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
-modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
-time=$(date "+%Y年%m月%d日 %H:%M:%S")
 # rm
 rm -rf $workfile
 # mkdir
@@ -18,22 +13,42 @@ mkdir -p /storage/emulated/0/MIUI_odex/product/app
 mkdir -p /storage/emulated/0/MIUI_odex/product/priv-app
 # log
 touch $workfile/log/MIUI_odex_$now_time.log
-# copy files to path
-cp -r /system/app/* $workfile/app
-cp -r /system/priv-app/* $workfile/priv-app
-cp -r /system/product/app/* $workfile/product/app
-cp -r /system/product/priv-app/* $workfile/product/priv-app
-echo "- 文件复制完成，开始执行"
+# odex
+echo "- 您希望以什么模式编译Odex(1.simple 2.compile)"
+read choose_odex
+  if [ $choose_odex == 1 ] ; then
+      echo "- 正在以Simple(简单)模式编译"
+      cp -r /system/app/miui $workfile/app
+      cp -r /system/app/miuisystem $workfile/app
+      cp -r /system/app/XiaomiServiceFramework $workfile/app
+      cp -r /system/priv-app/MiuiCamera $workfile/priv-app
+      cp -r /system/priv-app/MiuiGallery $workfile/priv-app
+      cp -r /system/priv-app/MiuiHome $workfile/priv-app
+      cp -r /system/priv-app/MiuiSystemUI $workfile/priv-app
+      cp -r /system/priv-app/SecurityCenter $workfile/priv-app
+      cp -r /system/product/priv-app/Settings $workfile/product/priv-app
+      echo "- 文件复制完成，开始执行"
+  else
+    if [ $choose_odex == 2 ] ;then
+      echo "- 正在以Complete(完整)模式编译"
+      # copy files to path
+      cp -r /system/app/* $workfile/app
+      cp -r /system/priv-app/* $workfile/priv-app
+      cp -r /system/product/app/* $workfile/product/app
+      cp -r /system/product/priv-app/* $workfile/product/priv-app
+      echo "- 文件复制完成，开始执行"
+    else
+	  echo "- 未输入正确参数，跳过"
+    fi
+  fi
 
 # system/app
-echo "- 正在分离system/app"
 shopt -s extglob
 dirapp=$(ls -l $workfile/app |awk '/^d/ {print $NF}')
 for i in $dirapp
 do
    cd $workfile/app/$i
 # unzip
-   echo "- 正在解包$i，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -81,14 +96,12 @@ fi
 done
 
 # system/priv-app
-echo "- 正在分离system/priv-app"
 shopt -s extglob
 dirpriv=$(ls -l $workfile/priv-app |awk '/^d/ {print $NF}')
 for p in $dirpriv
 do
    cd $workfile/priv-app/$p
 # unzip
-   echo "- 正在解包$p，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -136,14 +149,12 @@ fi
 done
 
 # system/product/app
-echo "- 正在分离system/product/app"
 shopt -s extglob
 productapp=$(ls -l $workfile/product/app |awk '/^d/ {print $NF}')
 for a in $productapp
 do
    cd $workfile/product/app/$a
 # unzip
-   echo "- 正在解包$a，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -191,14 +202,12 @@ fi
 done
 
 # system/product/priv-app
-echo "- 正在分离system/product/priv-app"
 shopt -s extglob
 productprivapp=$(ls -l $workfile/product/priv-app |awk '/^d/ {print $NF}')
 for b in $productprivapp
 do
    cd $workfile/product/priv-app/$b
 # unzip
-   echo "- 正在解包$b，请稍后"
    unzip -q -o *.apk
 # whether unzip apk success
 if [ $? = 0 ] ; then
@@ -247,39 +256,70 @@ done
 # end
 echo "- 共$success_count次成功，$faild_count次失败，请检查对应目录"
 
-# 用户应用
-echo "正在以Everything模式优化用户软件"
-mkdir -p $workfile/packagelist
-touch $workfile/packagelist/packagelist.log
-echo "`pm list packages -3`" > $workfile/packagelist/packagelist.log
-apptotalnumber="`grep -o "package:" $workfile/packagelist/packagelist.log | wc -l`"
-appnumber=0
-for item in `pm list packages -3`
-do
-echo 
-app=${item:8}
-echo "应用优化完成 -> $app"
-cmd package compile -m everything $app
-let appnumber=appnumber+1
-echo "已完成 $appnumber / $apptotalnumber"
-done
+echo "- 您希望以什么方式编译用户应用(1.Speed 2.Everthing)"
+read choose_dex2oat
+if [ $choose_dex2oat == 1 ] ; then
+  # 用户应用
+  echo "正在以Speed模式优化用户软件"
+  mkdir -p $workfile/packagelist
+  touch $workfile/packagelist/packagelist.log
+  echo "`pm list packages -3`" > $workfile/packagelist/packagelist.log
+  apptotalnumber="`grep -o "package:" $workfile/packagelist/packagelist.log | wc -l`"
+  appnumber=0
+  for item in `pm list packages -3`
+  do
+  echo 
+  app=${item:8}
+  echo "应用优化完成(Speed 模式) -> $app"
+  cmd package compile -m speed $app
+  let appnumber=appnumber+1
+  echo "已完成 $appnumber / $apptotalnumber"
+  done
+else
+      if [ $choose_odex == 2 ] ;then
+        # 用户应用
+        echo "正在以Everything模式优化用户软件"
+        mkdir -p $workfile/packagelist
+        touch $workfile/packagelist/packagelist.log
+        echo "`pm list packages -3`" > $workfile/packagelist/packagelist.log
+        apptotalnumber="`grep -o "package:" $workfile/packagelist/packagelist.log | wc -l`"
+        appnumber=0
+        for item in `pm list packages -3`
+        do
+          echo 
+          app=${item:8}
+          echo "应用优化完成(Everthing 模式) -> $app"
+          cmd package compile -m everything $app
+          let appnumber=appnumber+1
+          echo "已完成 $appnumber / $apptotalnumber"
+        done
+	      echo "- done!"
+      else
+          echo "- 未输入正确参数，跳过"
+      fi
+fi
+
 
 # 生成模块
 echo "- 正在制作模块，请坐和放宽"
-rm -rf /data/adb/modules/odex
-mkdir -p /data/adb/modules/odex/system
-touch /data/adb/modules/odex/module.prop
-echo "id=odex" >> /data/adb/modules/odex/module.prop
-echo "name=$model优化" >> /data/adb/modules/odex/module.prop
-echo "version=1.0" >> /data/adb/modules/odex/module.prop
-echo "versionCode=1" >> /data/adb/modules/odex/module.prop
-echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/odex/module.prop
-echo "minMagisk=19000" >> /data/adb/modules/odex/module.prop
-echo -n "description=对系统应用进行分离odex，分离的机型为$model，版本为MIUI $ver $modelversion，编译时间为$time" >> /data/adb/modules/odex/module.prop
-mv $workfile/* /data/adb/modules/odex/system
+rm -rf /data/adb/modules/miuiodex
+mkdir -p /data/adb/modules/miuiodex/system
+touch /data/adb/modules/miuiodex/module.prop
+echo "id=miuiodex" >> /data/adb/modules/miuiodex/module.prop
+echo "name=MIUI odex优化" >> /data/adb/modules/miuiodex/module.prop
+echo "version=1.0" >> /data/adb/modules/miuiodex/module.prop
+echo "versionCode=1" >> /data/adb/modules/miuiodex/module.prop
+echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/miuiodex/module.prop
+echo "minMagisk=19000" >> /data/adb/modules/miuiodex/module.prop
+model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
+ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
+modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
+time=$(date "+%Y年%m月%d日 %H:%M:%S")
+echo -n "description=对系统应用进行分离odex，分离的机型为$model，版本为MIUI $ver $modelversion，编译时间为$time" >> /data/adb/modules/miuiodex/module.prop
+mv $workfile/* /data/adb/modules/miuiodex/system
 if [ $? = 0 ] ; then
-     mv /data/adb/modules/odex/system/log $workfile
-     rm -rf /data/adb/modules/odex/system/packagelist
+     mv /data/adb/modules/miuiodex/system/log $workfile
+     rm -rf /data/adb/modules/miuiodex/system/packagelist
      echo "- 模块制作完成，请重启生效"
 else
      echo "! 模块制作失败，自个儿看着办"
