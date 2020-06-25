@@ -14,8 +14,7 @@
 
 #### 下载
 
-https://github.com/DavidPisces/MIUI-Auto-Odex/releases
-
+https://github.com/zjw2017/odex-For-MIUI-WeeklyReleases/releases
 ****
 
 #### 能做什么
