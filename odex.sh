@@ -1,11 +1,15 @@
 #!/bin/bash
+# MIUI ODEX项目贡献者：柚稚的孩纸(zjw2017) 雄氏老方(DavidPisces)
+
 workfile=/storage/emulated/0/MIUI_odex
 success_count=0
 faild_count=0
 now_time=$(date '+%Y%m%d_%H:%M:%S')
+echo "- 正在准备环境"
 # rm
 rm -rf $workfile
 # mkdir
+echo "- 正在创建目录"
 mkdir -p /storage/emulated/0/MIUI_odex/log
 mkdir -p /storage/emulated/0/MIUI_odex/app
 mkdir -p /storage/emulated/0/MIUI_odex/priv-app
@@ -13,9 +17,47 @@ mkdir -p /storage/emulated/0/MIUI_odex/product/app
 mkdir -p /storage/emulated/0/MIUI_odex/product/priv-app
 # log
 touch $workfile/log/MIUI_odex_$now_time.log
-# odex
-echo "- 您希望以什么模式编译Odex(1.simple 2.compile)"
+
+# clear screen
+clear
+
+# choose odex mod
+echo "*************************************************"
+echo " "
+echo " "
+echo "                   MIUI ODEX"
+echo " "
+echo " "
+echo "*************************************************"
+echo -e "\n- 您希望以什么模式编译Odex\n"
+echo "[1] Simple (耗时较少,占用空间少，仅编译重要应用)"
+echo "[2] Complete (耗时较长，占用空间大，完整编译)"
+echo "[3] Skip ODEX 跳过ODEX编译"
+echo "[q] Quit 退出"
+echo -e "\n请输入选项"
 read choose_odex
+clear
+if [ $choose_odex == q ] ; then
+  echo "- 已退出"
+  exit
+fi
+# choose dex2oat mod
+echo "*************************************************"
+echo " "
+echo " "
+echo "                   MIUI ODEX"
+echo " "
+echo " "
+echo "*************************************************"
+echo -e "\n- 您希望以什么模式进行Dex2oat\n"
+echo "[1] Speed (快速编译,耗时较短)"
+echo "[2] Everything (完整编译,耗时较长)"
+echo "[q] Quit 退出"
+echo -e "\n请输入选项"
+read choose_dex2oat
+clear
+
+
   if [ $choose_odex == 1 ] ; then
       echo "- 正在以Simple(简单)模式编译"
       cp -r /system/app/miui $workfile/app
@@ -28,6 +70,7 @@ read choose_odex
       cp -r /system/priv-app/SecurityCenter $workfile/priv-app
       cp -r /system/product/priv-app/Settings $workfile/product/priv-app
       echo "- 文件复制完成，开始执行"
+	  odex_module=true
   else
     if [ $choose_odex == 2 ] ;then
       echo "- 正在以Complete(完整)模式编译"
@@ -37,10 +80,18 @@ read choose_odex
       cp -r /system/product/app/* $workfile/product/app
       cp -r /system/product/priv-app/* $workfile/product/priv-app
       echo "- 文件复制完成，开始执行"
-    else
-	  echo "- 未输入正确参数，跳过"
+	  odex_module=true
     fi
+	if [ $choose_odex == 3 ] ; then
+	  echo "- 跳过odex编译，不会生成模块"
+	  odex_module=false
+	fi
   fi
+
+if [ $choose_dex2oat == q ] ;then 
+  echo "- 已退出"
+  exit
+fi
 
 # system/app
 shopt -s extglob
@@ -256,8 +307,7 @@ done
 # end
 echo "- 共$success_count次成功，$faild_count次失败，请检查对应目录"
 
-echo "- 您希望以什么方式编译用户应用(1.Speed 2.Everthing)"
-read choose_dex2oat
+
 if [ $choose_dex2oat == 1 ] ; then
   # 用户应用
   echo "正在以Speed模式优化用户软件"
@@ -273,7 +323,8 @@ if [ $choose_dex2oat == 1 ] ; then
   echo "应用优化完成(Speed 模式) -> $app"
   cmd package compile -m speed $app
   let appnumber=appnumber+1
-  echo "已完成 $appnumber / $apptotalnumber"
+  percentage=$((appnumber*100/apptotalnumber))
+  echo "已完成 $percentage%   $appnumber / $apptotalnumber"
   done
 else
       if [ $choose_odex == 2 ] ;then
@@ -291,37 +342,42 @@ else
           echo "应用优化完成(Everthing 模式) -> $app"
           cmd package compile -m everything $app
           let appnumber=appnumber+1
-          echo "已完成 $appnumber / $apptotalnumber"
+          percentage=$((appnumber*100/apptotalnumber))
+          echo "已完成 $percentage%   $appnumber / $apptotalnumber"
         done
 	      echo "- done!"
       else
-          echo "- 未输入正确参数，跳过"
+          echo "- 未输入正确参数，Faild"
+		  exit 0
       fi
 fi
 
-
+if [ $odex_module == true ] ; then
 # 生成模块
-echo "- 正在制作模块，请坐和放宽"
-rm -rf /data/adb/modules/miuiodex
-mkdir -p /data/adb/modules/miuiodex/system
-touch /data/adb/modules/miuiodex/module.prop
-echo "id=miuiodex" >> /data/adb/modules/miuiodex/module.prop
-echo "name=MIUI odex优化" >> /data/adb/modules/miuiodex/module.prop
-echo "version=1.0" >> /data/adb/modules/miuiodex/module.prop
-echo "versionCode=1" >> /data/adb/modules/miuiodex/module.prop
-echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/miuiodex/module.prop
-echo "minMagisk=19000" >> /data/adb/modules/miuiodex/module.prop
-model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
-ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
-modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
-time=$(date "+%Y年%m月%d日 %H:%M:%S")
-echo -n "description=对系统应用进行分离odex，分离的机型为$model，版本为MIUI $ver $modelversion，编译时间为$time" >> /data/adb/modules/miuiodex/module.prop
-mv $workfile/* /data/adb/modules/miuiodex/system
-if [ $? = 0 ] ; then
-     mv /data/adb/modules/miuiodex/system/log $workfile
-     rm -rf /data/adb/modules/miuiodex/system/packagelist
-     echo "- 模块制作完成，请重启生效"
+  echo "- 正在制作模块，请坐和放宽"
+  rm -rf /data/adb/modules/miuiodex
+  mkdir -p /data/adb/modules/miuiodex/system
+  touch /data/adb/modules/miuiodex/module.prop
+  echo "id=miuiodex" >> /data/adb/modules/miuiodex/module.prop
+  echo "name=MIUI ODEX" >> /data/adb/modules/miuiodex/module.prop
+  echo "version=3.2" >> /data/adb/modules/miuiodex/module.prop
+  echo "versionCode=1" >> /data/adb/modules/miuiodex/module.prop
+  echo "author=柚稚的孩纸&雄式老方" >> /data/adb/modules/miuiodex/module.prop
+  echo "minMagisk=19000" >> /data/adb/modules/miuiodex/module.prop
+  model="`grep -n "ro.product.system.model" /system/build.prop | cut -d= -f2`"
+  ver="`grep -n "ro.miui.ui.version.name" /system/build.prop | cut -dV -f2`"
+  modelversion="`grep -n "ro.system.build.version.incremental" /system/build.prop | cut -d= -f2`"
+  time=$(date "+%Y年%m月%d日 %H:%M:%S")
+  echo -n "description=对系统应用进行分离odex，MIUI版本 $ver $modelversion，编译时间$time [Build with $model]" >> /data/adb/modules/miuiodex/module.prop
+  mv $workfile/* /data/adb/modules/miuiodex/system
+  if [ $? = 0 ] ; then
+       mv /data/adb/modules/miuiodex/system/log $workfile
+       rm -rf /data/adb/modules/miuiodex/system/packagelist
+       echo "- 模块制作完成，请重启生效"
+  else
+       echo "! 模块制作失败"
+  fi
 else
-     echo "! 模块制作失败，自个儿看着办"
+  echo "- 未选择编译odex选项，不会生成模块"
 fi
-echo "- 活整好了"
+echo "- 完成！"
