@@ -12,11 +12,6 @@
 
 ----
 
-#### 下载
-
-https://github.com/zjw2017/odex-For-MIUI-WeeklyReleases/releases
-****
-
 #### 能做什么
 
 > 此脚本能实现系统软件的Odex与odex2oat编译，适用于被MIUI阉割Odex优化的系统
